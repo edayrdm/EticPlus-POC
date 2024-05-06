@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface CustomClientLinkRepository {
 
-    ClientLink updateClientLinkUsingFindAndModify(Client cl, Link l, Boolean st);
+    ClientLink updateClientLink (Client client, Link link, Boolean statement);
 
-    List<ClientLinkDto> findClientLinkUsingFindAndModify(Client cl);
+    List<ClientLinkDto> findClientLinkUsingFindAndModify(Client client);
 }

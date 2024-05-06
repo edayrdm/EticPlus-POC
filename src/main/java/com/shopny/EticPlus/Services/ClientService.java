@@ -2,7 +2,6 @@ package com.shopny.EticPlus.Services;
 
 import com.shopny.EticPlus.DTOs.ClientDto;
 import com.shopny.EticPlus.Entities.Client;
-import com.shopny.EticPlus.Repositories.ClientLinkRepository;
 import com.shopny.EticPlus.Repositories.ClientRepository;
 import com.shopny.EticPlus.exceptions.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +19,6 @@ public class ClientService {
         this.clientRepository = clientRepository;
     }
 
-    // function to create a new client
     public Client createClient(ClientDto clientDto) {
 
         Client client = Client.builder()
@@ -36,13 +34,11 @@ public class ClientService {
     public Client getClientByIdAndPassword(String name, String password) {
         return clientRepository.findByNameAndPassword(name, password)
                 .orElseThrow(() -> new UserNotFoundException("Username or password is not correct"));
-
     }
 
     public Client getClientById(String id) {
         return clientRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("Client is not found"));
-
     }
 
     public List<Client> getAllClientData() {

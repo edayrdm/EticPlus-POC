@@ -7,9 +7,10 @@ import com.shopny.EticPlus.Entities.ClientLinkDto;
 import com.shopny.EticPlus.Entities.Link;
 import com.shopny.EticPlus.Services.ClientLinkService;
 import com.shopny.EticPlus.Services.ClientService;
+import com.shopny.EticPlus.Services.DefaultSignUpSettings;
 import com.shopny.EticPlus.Services.LinkService;
+import com.shopny.EticPlus.exceptions.UserNotFoundException;
 import jakarta.validation.Valid;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 @CrossOrigin(origins="*")
 @RestController
@@ -27,19 +27,25 @@ public class ClientController {
     private final ClientService clientService;
     private final LinkService linkService;
     private final ClientLinkService clientLinkService;
+    private final DefaultSignUpSettings defaultSignUpSettings;
+
 
     @Autowired
-    public ClientController(ClientService cityBulkWriteService, LinkService linkService, ClientLinkService clientLinkService) {
-        this.clientService = cityBulkWriteService;
+    public ClientController(ClientService clientService,
+                            LinkService linkService,
+                            ClientLinkService clientLinkService,
+                            DefaultSignUpSettings defaultSignUpSettings) {
+        this.clientService = clientService;
         this.linkService = linkService;
         this.clientLinkService = clientLinkService;
+        this.defaultSignUpSettings = defaultSignUpSettings;
     }
 
     @PostMapping(path="/create", consumes = MediaType.APPLICATION_JSON_VALUE,produces =MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Client> createClientData(@RequestBody @Valid ClientDto clientData){
 
         Client newData = clientService.createClient(clientData);
-        DefaultSignUpForLinks(newData);
+        defaultSignUpSettings.DefaultSignUpForLinks(newData);
         return new ResponseEntity<Client>(newData, HttpStatus.CREATED);
     }
 
@@ -61,48 +67,43 @@ public class ClientController {
 
         Client client = clientService.getClientById(clientId);
         List<ClientLinkDto> dataList = clientLinkService.getClientLinkByClient(client);
+
         return new ResponseEntity<List<ClientLinkDto>>(dataList,HttpStatus.OK);
     }
 
-    @PostMapping(path="/updateLink",produces =MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ClientLinkDto> updateClientLink(@RequestParam(name = "clientId") String clientId,
-                                                          @RequestParam(name = "linkId") String linkId,
-                                                          @RequestParam(name = "statement") Boolean st){
+    @PostMapping(path="/activateLink",produces =MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ClientLinkDto> activateClientLink(@RequestParam(name = "clientId") String clientId,
+                                                            @RequestParam(name = "linkId") String linkId){
+
+        Client client = clientService.getClientById(clientId);
+        clientLinkService.permissionForLink(client);
+
+        Link link = linkService.getLinkById(linkId);
+        ClientLinkDto newData = clientLinkService.updateClientLinkStatus(client, link, true);
+
+        return new ResponseEntity<ClientLinkDto>(newData, HttpStatus.CREATED);
+    }
+
+    @PostMapping(path="/deactivateLink",produces =MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ClientLinkDto> deactivateClientLink(@RequestParam(name = "clientId") String clientId,
+                                                            @RequestParam(name = "linkId") String linkId){
 
         Client client = clientService.getClientById(clientId);
         Link link = linkService.getLinkById(linkId);
-        ClientLinkDto newData = clientLinkService.updateClientLinkUsingFindAndModify(client, link, st);
+        ClientLinkDto newData = clientLinkService.updateClientLinkStatus(client, link, false);
 
         return new ResponseEntity<ClientLinkDto>(newData, HttpStatus.CREATED);
     }
 
     @PostMapping(path = "/delete",produces =MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> deleteClient(@RequestParam(name = "name", required = true) String name,
-                                            @RequestParam(name = "password", required = true) String psw) {
+                                               @RequestParam(name = "password", required = true) String psw) {
 
         Client client = clientService.getClientByIdAndPassword(name, psw);
         clientService.deleteClient(client.getId());
         clientLinkService.deleteClientLinkById(client.getId());
 
         return ResponseEntity.ok().body("Client deleted successfully");
-    }
-
-    public void DefaultSignUpForLinks(Client cl){
-
-        Link link;
-        ClientLink clink;
-
-        link = linkService.getLinkByName("Günlük Satış Raporu");
-        clink =  new ClientLink(cl.getId(), link.getId(), false);
-        clientLinkService.createClientLink(clink);
-
-        link = linkService.getLinkByName("Google Analytics");
-        clink =  new ClientLink(cl.getId(), link.getId(), false);
-        clientLinkService.createClientLink(clink);
-
-        link = linkService.getLinkByName("Chatmate");
-        clink =  new ClientLink(cl.getId(), link.getId(), false);
-        clientLinkService.createClientLink(clink);
     }
 
 }

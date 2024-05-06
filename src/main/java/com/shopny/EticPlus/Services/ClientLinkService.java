@@ -12,12 +12,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class ClientLinkService {
@@ -35,40 +34,48 @@ public class ClientLinkService {
         this.customClientLinkRepositoryImp = customClientLinkRepositoryImp;
     }
 
-    public ClientLink createClientLink(ClientLink cl) {
-        return clientLinkRepository.save(cl);
+    public ClientLink createClientLink(ClientLink client) {
+        return clientLinkRepository.save(client);
+    }
+
+    public List<ClientLink> createClientLinkAll(List<ClientLink> clientList) {
+        return  clientLinkRepository.saveAll(clientList);
     }
 
     public void deleteClientLinkById(String id) {
         clientLinkRepository.deleteByClientId(id);
     }
 
-    public List<ClientLinkDto> getClientLinkByClient(Client cl) {
+    public void permissionForLink(Client client){
+        int activeLinkCount =  clientLinkRepository.countByClientIdAndStatement(client.getId(), true);
+        if( activeLinkCount >= 3 && !Objects.equals(client.getAccount(), "Platinum") )
+            throw new UserNotFoundException("Client is not Premium");
+    }
 
-        List<ClientLinkDto> list = customClientLinkRepositoryImp.findClientLinkUsingFindAndModify(cl);
-               // .orElseThrow(() -> new UserNotFoundException("Client Link List not found"));
+    public List<ClientLinkDto> getClientLinkByClient(Client client) {
+
+        List<ClientLink> list = clientLinkRepository.findByClientId(client.getId())
+                .orElseThrow(() -> new UserNotFoundException("Client Link List not found"));
 
         List<ClientLinkDto> result = list.stream().map(clientLink -> ClientLinkDto.builder()
-                        .clientName(clientLink.getClientName())
-                        .linkName(clientLink.getLinkName())
+                        .clientName(client.getName())
+                        .linkName(clientLink.getLinkId())
                         .statement(clientLink.getStatement())
                         .build())
                 .collect(Collectors.toList());
         return result;
     }
 
-    public ClientLinkDto updateClientLinkUsingFindAndModify(Client cl, Link link, Boolean st) {
+    public ClientLinkDto updateClientLinkStatus(Client client, Link link, Boolean statement) {
 
-        ClientLink clientLink =customClientLinkRepositoryImp.updateClientLinkUsingFindAndModify(cl, link, st);
+        ClientLink clientLink =customClientLinkRepositoryImp.updateClientLink(client, link, statement);
 
-        logger.info("{} activated {} :: Execution Time - {}", cl.getName(), link.getName(), dateTimeFormatter.format(LocalDateTime.now()));
+        logger.info("{} activated {} :: Execution Time - {}", client.getName(), link.getName(), dateTimeFormatter.format(LocalDateTime.now()));
 
-        ClientLinkDto dto = ClientLinkDto.builder()
+        return ClientLinkDto.builder()
                 .clientName(clientLink.getClientId())
                 .linkName(clientLink.getLinkId())
                 .statement(clientLink.getStatement())
                 .build();
-
-        return dto;
     }
 }
