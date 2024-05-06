@@ -31,7 +31,7 @@ public class ClientService {
         return clientRepository.save(client);
     }
 
-    public Client getClientByIdAndPassword(String name, String password) {
+    public Client getClientByNameAndPassword(String name, String password) {
         return clientRepository.findByNameAndPassword(name, password)
                 .orElseThrow(() -> new UserNotFoundException("Username or password is not correct"));
     }

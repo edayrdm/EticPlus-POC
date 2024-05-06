@@ -59,7 +59,7 @@ public class ClientController {
     @GetMapping(path = "/login")
     public ResponseEntity<Client> loginClient(@RequestParam(name = "name", required = true) String name,
                                             @RequestParam(name = "password", required = true) String psw) {
-        return ResponseEntity.ok().body(clientService.getClientByIdAndPassword(name, psw));
+        return ResponseEntity.ok().body(clientService.getClientByNameAndPassword(name, psw));
     }
 
     @GetMapping(path="/links/{clientId}", produces =MediaType.APPLICATION_JSON_VALUE)
@@ -99,7 +99,7 @@ public class ClientController {
     public ResponseEntity<String> deleteClient(@RequestParam(name = "name", required = true) String name,
                                                @RequestParam(name = "password", required = true) String psw) {
 
-        Client client = clientService.getClientByIdAndPassword(name, psw);
+        Client client = clientService.getClientByNameAndPassword(name, psw);
         clientService.deleteClient(client.getId());
         clientLinkService.deleteClientLinkById(client.getId());
 
