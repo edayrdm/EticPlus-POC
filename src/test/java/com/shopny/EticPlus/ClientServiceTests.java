@@ -11,9 +11,12 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -48,5 +51,29 @@ public class ClientServiceTests {
         assertEquals(clientId, result.getId());
         assertEquals("John Doe", result.getName());
         assertEquals("Silver", result.getAccount());
+    }
+
+    @Test
+    public void login_shouldReturnClient() {
+        // Arrange
+
+        String clientId = "abc123";
+        Client mockClient = new Client();
+        mockClient.setId(clientId);
+        mockClient.setName("John Doe");
+        mockClient.setPassword("psw123");
+        mockClient.setAccount("Silver");
+
+        // Mock the behavior of the repository to return the mock employee
+        Mockito.when(clientRepository.findByNameAndPassword(anyString(), anyString())).thenReturn(Optional.of(mockClient));
+
+        // Act
+        ClientDto req = new ClientDto();
+        Client result = clientService.getClientByNameAndPassword("a", "b");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("John Doe", result.getName());
+        assertEquals("psw123", result.getPassword());
     }
 }
